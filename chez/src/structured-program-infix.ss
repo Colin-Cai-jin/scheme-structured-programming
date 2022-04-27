@@ -5,8 +5,7 @@
 	~get-pair-of-n-d-array
 	~make-vector ~make-list
 	~infix-cal ~set-arr-value! ~assign
-	~get-vector-of-n-d-array
-	~get-list-of-n-d-array
+	~get-value-of-n-d-array
 	)
 (import (scheme))
 
@@ -685,22 +684,13 @@
 	(make-list (car size) v)
 	(make-list (car size) (apply ~make-list (cdr size) value)))))
 
-;Get the value in a N demention vector
-;(~get-vector-of-n-d-array '#(#(1 2)#(3 4)) 1 1) => 4
-(define (~get-vector-of-n-d-array s . arg)
+;Get the value in a N demention array
+;(~get-value-of-n-d-array '#(#(1 2) (3 4)) 1 1) => 4
+(define (~get-value-of-n-d-array s . arg)
   (if (null? arg)
       s
-      (apply ~get-vector-of-n-d-array
-	     (vector-ref s (car arg))
-	     (cdr arg))))
-
-;Get the value in a N demention list
-;(~get-list-of-n-d-array '((1 2) (3 4)) 1 1) => 4
-(define (~get-list-of-n-d-array s . arg)
-  (if (null? arg)
-      s
-      (apply ~get-list-of-n-d-array
-	     (list-ref s (car arg))
+      (apply ~get-value-of-n-d-array
+	     ((if (vector? s) vector-ref list-ref) s (car arg))
 	     (cdr arg))))
 
 ;For the variable define
@@ -761,9 +751,10 @@
 (define-syntax ~set-arr-value!
   (syntax-rules (=)
     ((_ n-d-array n ... m = v)
-     (if (vector? n-d-array)
-	 (vector-set! (~get-vector-of-n-d-array n-d-array n ...) m v)
-	 (set-car! (~get-pair-of-n-d-array n-d-array n ... m) v)))))
+     (let ((x (~get-value-of-n-d-array n-d-array n ...)))
+       (if (vector? x)
+	   (vector-set! x m v)
+	   (set-car! (~get-pair-of-n-d-array x m) v))))))
 
 ;Convert the infix expression to the s-expression
 (define-syntax (~infix-cal x)
@@ -911,9 +902,7 @@
 			       'data
 			       (cons
 				'(lambda s
-				   (if (vector? (car s))
-				     (apply ~get-vector-of-n-d-array s)
-				     (apply ~get-list-of-n-d-array s)))
+				   (apply ~get-value-of-n-d-array s))
 				(map cdr (reverse (cdr x))))))))
 		    (cdr
 		      (fold-left
