@@ -4,7 +4,7 @@
  	~assign
 	~get-pair-of-n-d-array
 	~make-vector ~make-list
-	~infix-cal ~set-arr-value! ~assign
+	~infix-cal ~set-arr-value!
 	~get-value-of-n-d-array
 	)
 (import (scheme))
@@ -690,7 +690,7 @@
   (if (null? arg)
       s
       (apply ~get-value-of-n-d-array
-	     ((if (vector? s) vector-ref list-ref) s (car arg))
+	     ((cond ((vector? s) vector-ref) ((string? s) (lambda (s n) (make-string 1 (string-ref s n)))) (else list-ref)) s (car arg))
 	     (cdr arg))))
 
 ;For the variable define
@@ -752,9 +752,10 @@
   (syntax-rules (=)
     ((_ n-d-array n ... m = v)
      (let ((x (~get-value-of-n-d-array n-d-array n ...)))
-       (if (vector? x)
-	   (vector-set! x m v)
-	   (set-car! (~get-pair-of-n-d-array x m) v))))))
+       (cond
+	 ((vector? x) (vector-set! x m v))
+	 ((string? x) (set! x (let ((len (string-length x))) (string-append (substring x 0 m) v (substring x (+ m 1) len)))))
+	 (else (set-car! (~get-pair-of-n-d-array x m) v)))))))
 
 ;Convert the infix expression to the s-expression
 (define-syntax (~infix-cal x)
@@ -932,23 +933,23 @@
 	     ((%) 2 3 remainder)
 	     ((? :) 3 10 if)
 	     ((-) 1 0 -)
-	     ((==) 2 7 eqv?)
-	     ((>) 2 7 >)
-	     ((<) 2 7 <)
-	     ((>=) 2 7 >=)
-	     ((<=) 2 7 <=)
-	     ((!=) 2 7 (lambda (a b) (not (eqv? a b))))
+	     ((==) 2 7 (lambda (a b) ((if (string? a) string=? eqv?) a b)))
+	     ((>) 2 7 (lambda (a b) ((if (string? a) string>? >) a b)))
+	     ((<) 2 7 (lambda (a b) ((if (string? a) string<? <) a b)))
+	     ((>=) 2 7 (lambda (a b) ((if (string? a) string>=? >=) a b)))
+	     ((<=) 2 7 (lambda (a b) ((if (string? a) string<=? <=) a b)))
+	     ((!=) 2 7 (lambda (a b) (not ((if (string? a) string=? eqv?) a b))))
 	     ((and) 2 9 and)
 	     ((or) 2 9 or)
 	     ((!) 1 8 not)
 	     ((:) 1 0 list)
-	     ((sizeof) 1 0 (lambda (x) (if (vector? x) (vector-length x) (length x))))
+	     ((sizeof) 1 0 (lambda (x) ((cond ((vector? x) vector-length) ((string? x) string-length) (else length)) x)))
 	     ((**) 2 1 expt)
 	     ((bit-and) 2 4 bitwise-and)
 	     ((bit-or) 2 4 bitwise-ior)
 	     ((bit-xor) 2 4 bitwise-xor)
 	     ((bit-not) 1 2 bitwise-not)
-	     ((>-<) 2 6 append)
+	     ((>-<) 2 6 (lambda (x . s) (apply (cond ((string? x) string-append) (else append)) x s)))
 	     ))))
      (datum->syntax
        #'k
