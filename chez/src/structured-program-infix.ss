@@ -1,6 +1,6 @@
 ;#lang racket
 (library (structured-program-infix)
-(export prog var
+(export function prog var
  	~assign
 	~get-pair-of-n-d-array
 	~make-vector ~make-list
@@ -955,5 +955,12 @@
        #'k
       result)))))
 
+(define-syntax (function x)
+  (syntax-case x ()
+    ((k f body ...)
+     (with-syntax
+       ((define (datum->syntax #'k 'define))
+	(prog (datum->syntax #'k  'prog)))
+     #'(define f (prog body ...))))))
 )
 

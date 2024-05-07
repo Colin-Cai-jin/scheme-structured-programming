@@ -1,5 +1,5 @@
 #lang racket
-(provide prog var
+(provide function prog var
  	~assign
 	~get-pair-of-n-d-array
 	~mlist
@@ -976,4 +976,12 @@
      (datum->syntax
        #'k
       result)))))
+
+(define-syntax (function x)
+  (syntax-case x ()
+    ((k f body ...)
+     (with-syntax
+       ((define (datum->syntax #'k 'define))
+	(prog (datum->syntax #'k  'prog)))
+     #'(define f (prog body ...))))))
 
